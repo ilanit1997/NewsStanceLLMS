@@ -284,9 +284,10 @@ class LlamaChatModel:
 
         self.device = f'cuda:{cuda.current_device()}' if cuda.is_available() else 'cpu'
 
-        self.tokenizer = AutoTokenizer.from_pretrained(model)
+        self.tokenizer = AutoTokenizer.from_pretrained(model, use_fast=True)
+        self.pipeline_type = config["pipeline_type"]
         self.pipeline = transformers.pipeline(
-            "text-generation",
+            self.pipeline_type,
             model=model,
             torch_dtype=torch.float16,
             device_map="auto",
@@ -297,17 +298,36 @@ class LlamaChatModel:
             self.prompt = "\n".join(file.readlines())
 
     def generate_text(self, data: dict) -> List:
-        prompt_full = self.prompt.replace("headline", data["headline"])
-        prompt_full = prompt_full.replace("article", data["content"])
-        len_prompt = len(prompt_full)
-        results =  self.pipeline(
-                    prompt_full,
-                    do_sample=True,
-                    top_k=10,
-                    num_return_sequences=1,
-                    eos_token_id=self.tokenizer.eos_token_id,
-                    max_length=1500,
-        )
+        prompt_full = self.prompt.replace("{headline}", data["headline"])
+        prompt_full = prompt_full.replace("{article_text}", data["content"])
 
-        generated_texts = [result["generated_text"][len_prompt:] for result in results]
-        return generated_texts
+        len_prompt = int(len(prompt_full)*0.75)
+        output = ""
+        if "zero-shot" in self.pipeline_type:
+            results =  self.pipeline(
+                        prompt_full,
+                        candidate_labels=["pro-israel", "pro-hamas", "neutral"],
+                        do_sample=True,
+                        top_k=10,
+                        num_return_sequences=1,
+            )
+            # Ensure that the labels are sorted by scores in descending order
+            output_labels = results["labels"]
+            output_scores = results["scores"]
+            sorted_labels = [label for _, label in sorted(zip(output_scores, output_labels), reverse=True)]
+            output = sorted_labels[0]
+
+        elif "generation" in self.pipeline_type:
+            len_prompt = len(self.tokenizer.tokenize(prompt_full))
+            results = self.pipeline(
+                prompt_full,
+                do_sample=True,
+                top_k=10,
+                num_return_sequences=1,
+                eos_token_id=self.tokenizer.eos_token_id,
+                max_length=len_prompt+5,
+            )
+
+            output = [result["generated_text"][len(prompt_full):].strip() for result in results]
+
+        return output

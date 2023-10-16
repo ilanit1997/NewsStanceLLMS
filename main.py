@@ -20,7 +20,7 @@ results = {}
 
 ##llama2
 llama2_model = LlamaChatModel(config_path="configs/models_config.json")
-results['Political Affiliation'] = llama2_model.generate_text(data)
+results['Llama2 Affiliation'] = llama2_model.generate_text(data)
 
 # Print consolidated results
 for key, value in results.items():
