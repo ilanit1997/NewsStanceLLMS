@@ -1,0 +1,20 @@
+{
+    "FinancialSentimentModel": {
+        "model_name": "mrm8488/distilroberta-finetuned-financial-news-sentiment-analysis",
+        "tokenizer_name": "roberta-base",
+        "base_model": "roberta",
+        "categories": ["Negative", "Neutral", "Positive"]
+    },
+    "MultiNewsSentimentModel": {
+        "model_name": "z-dickson/multilingual_sentiment_newspaper_headlines",
+        "tokenizer_name": "bert-base-multilingual-cased",
+        "base_model": "bert",
+        "categories": ["Negative", "Neutral", "Positive"]
+    },
+    "PoliticalAffiliationModel": {
+        "model_name": "bucketresearch/politicalBiasBERT",
+        "tokenizer_name": "bert-base-cased",
+        "base_model": "bert",
+        "categories": ["Left", "Center", "Right"]
+    }
+}
