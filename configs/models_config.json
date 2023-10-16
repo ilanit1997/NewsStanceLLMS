@@ -18,7 +18,7 @@
         "categories": ["Left", "Center", "Right"]
     },
     "LlamaModel": {
-        "model_id": "meta-llama/Llama-2-13b-chat-hf",
+        "model_id": "meta-llama/Llama-2-7b-chat-hf",
         "prompt_file_path": "configs/prompt_llama2.txt",
         "quantization": {
             "load_in_4bit": true,

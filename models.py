@@ -5,7 +5,7 @@ import transformers
 from nltk.sentiment import SentimentIntensityAnalyzer
 from nltk.probability import FreqDist
 from transformers import AutoTokenizer, BertForSequenceClassification, RobertaForSequenceClassification, BertTokenizer, \
-    RobertaTokenizer, RobertaModel
+    RobertaTokenizer, RobertaModel, AutoModelForCausalLM
 import torch
 from enum import Enum
 from torch.nn.functional import cosine_similarity
@@ -279,36 +279,17 @@ class LlamaChatModel:
             config_file = json.load(file)
             config = config_file.get(ModelType.LlamaModel.value)
 
-        model_id = config["model_id"]
+        model = config["model_id"]
         prompt_file_path = config["prompt_file_path"]
 
         self.device = f'cuda:{cuda.current_device()}' if cuda.is_available() else 'cpu'
 
-        # Quantization configuration
-        quantization_config=config.get("quantization")
-        bnb_config = transformers.BitsAndBytesConfig(
-            load_in_4bit=quantization_config.get("load_in_4bit", True),
-            bnb_4bit_quant_type=quantization_config.get("bnb_4bit_quant_type", "nf4"),
-            bnb_4bit_use_double_quant=quantization_config.get("bnb_4bit_use_double_quant", True),
-            bnb_4bit_compute_dtype=quantization_config.get("bnb_4bit_compute_dtype", "bfloat16")
-        )
-
-        self.tokenizer = transformers.AutoTokenizer.from_pretrained(model_id)
-        self.model = transformers.AutoModelForCausalLM.from_pretrained(
-            model_id,
-            trust_remote_code=True,
-            quantization_config=bnb_config,
-            device_map='auto'
-        )
-        self.model.eval()
-        self.generator_config=config.get("generation")
-
-        self.generator = transformers.pipeline(
-            model=self.model, tokenizer=self.tokenizer,
-            task='text-generation',
-            temperature=self.generator_config.get("temperature", 0),
-            max_new_tokens=self.generator_config.get("max_new_tokens", 10),
-            repetition_penalty=self.generator_config.get("repetition_penalty", 1.1)
+        self.tokenizer = AutoTokenizer.from_pretrained(model)
+        self.pipeline = transformers.pipeline(
+            "text-generation",
+            model=model,
+            torch_dtype=torch.float16,
+            device_map="auto",
         )
 
         # Load prompts
@@ -317,11 +298,16 @@ class LlamaChatModel:
 
     def generate_text(self, data: dict) -> List:
         prompt_full = self.prompt.replace("headline", data["headline"])
-        prompt_full = prompt_full.replace("article", data["context"])
+        prompt_full = prompt_full.replace("article", data["content"])
+        len_prompt = len(prompt_full)
+        results =  self.pipeline(
+                    prompt_full,
+                    do_sample=True,
+                    top_k=10,
+                    num_return_sequences=1,
+                    eos_token_id=self.tokenizer.eos_token_id,
+                    max_length=1500,
+        )
 
-        results = self.generator(prompt_full, max_length=self.generator_config.get("max_new_tokens", 10),
-                                 temperature=self.generator_config.get("temperature", 0),
-                                 num_return_sequences=self.generator_config.get("temperature", 1))
-
-        generated_texts = [result["generated_text"] for result in results]
+        generated_texts = [result["generated_text"][len_prompt:] for result in results]
         return generated_texts
