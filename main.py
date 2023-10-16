@@ -14,7 +14,7 @@ multi_news_sentiment_model = ClassifierModel(ModelType.MultiNewsSentimentModel)
 results['News Sentiment'] = multi_news_sentiment_model.analyze(full_text)
 results['Political Affiliation'] = political_model.analyze(full_text)
 
-## doesnt work
+## doesnt work as expected - return similar scores for both pro-israel and pro-hamas
 # article_score = ArticleScorer()
 # results['Group Analysis'] = article_score.score_article(full_text)
 
