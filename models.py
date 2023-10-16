@@ -1,4 +1,5 @@
 import json
+from typing import List
 
 import transformers
 from nltk.sentiment import SentimentIntensityAnalyzer
@@ -12,8 +13,8 @@ from torch.nn.functional import cosine_similarity
 from preprocessing import *
 
 # # Ensure you've downloaded the required resources
-nltk.download('stopwords')
-nltk.download('wordnet')
+# nltk.download('stopwords')
+# nltk.download('wordnet')
 
 from torch import cuda, bfloat16
 
@@ -87,10 +88,12 @@ class ModelType(Enum):
     FinancialSentimentModel = "FinancialSentimentModel"
     PoliticalAffiliationModel = "PoliticalAffiliationModel"
     MultiNewsSentimentModel = "MultiNewsSentimentModel"
+    LlamaModel = "LlamaModel"
+
 class ClassifierModel:
     def __init__(self, model_type: ModelType):
         # Load the config
-        with open('models_config.json', 'r') as file:
+        with open('configs/models_config.json', 'r') as file:
             config_file = json.load(file)
         if model_type.value not in config_file.keys():
             raise NotImplementedError()
@@ -158,7 +161,7 @@ class ArticleScorer:
         self.model.eval()
 
         # Precompute mean embeddings for Pro-Israel and Pro-Palestine words
-        with open('israel_palestine_words.json', 'r') as file:
+        with open('configs/israel_palestine_words.json', 'r') as file:
             stance_data = json.load(file)
 
         self.pro_israel_mean_embedding = self.get_mean_embedding(stance_data["Pro-Israel words"])
@@ -271,15 +274,23 @@ class ArticleScorer:
 
 
 class LlamaChatModel:
-    def __init__(self, model_id='meta-llama/Llama-2-13b-chat-hf', prompt_file_path="prompt_llama2.txt"):
+    def __init__(self, config_path: str = "configs/models_config.json"):
+        with open(config_path, 'r') as file:
+            config_file = json.load(file)
+            config = config_file.get(ModelType.LlamaModel.value)
+
+        model_id = config["model_id"]
+        prompt_file_path = config["prompt_file_path"]
+
         self.device = f'cuda:{cuda.current_device()}' if cuda.is_available() else 'cpu'
 
         # Quantization configuration
+        quantization_config=config.get("quantization")
         bnb_config = transformers.BitsAndBytesConfig(
-            load_in_4bit=True,
-            bnb_4bit_quant_type='nf4',
-            bnb_4bit_use_double_quant=True,
-            bnb_4bit_compute_dtype=bfloat16
+            load_in_4bit=quantization_config.get("load_in_4bit", True),
+            bnb_4bit_quant_type=quantization_config.get("bnb_4bit_quant_type", "nf4"),
+            bnb_4bit_use_double_quant=quantization_config.get("bnb_4bit_use_double_quant", True),
+            bnb_4bit_compute_dtype=quantization_config.get("bnb_4bit_compute_dtype", "bfloat16")
         )
 
         self.tokenizer = transformers.AutoTokenizer.from_pretrained(model_id)
@@ -290,24 +301,27 @@ class LlamaChatModel:
             device_map='auto'
         )
         self.model.eval()
+        self.generator_config=config.get("generation")
 
         self.generator = transformers.pipeline(
             model=self.model, tokenizer=self.tokenizer,
             task='text-generation',
-            temperature=0.1,
-            max_new_tokens=10,
-            repetition_penalty=1.1
+            temperature=self.generator_config.get("temperature", 0),
+            max_new_tokens=self.generator_config.get("max_new_tokens", 10),
+            repetition_penalty=self.generator_config.get("repetition_penalty", 1.1)
         )
 
-        # Load prompts and data
+        # Load prompts
         with open(prompt_file_path, "r") as file:
             self.prompt = "\n".join(file.readlines())
 
-    def generate_text(self, data):
+    def generate_text(self, data: dict) -> List:
         prompt_full = self.prompt.replace("headline", data["headline"])
         prompt_full = prompt_full.replace("article", data["context"])
 
-        results = self.generator(prompt_full, max_length=10, temperature=0.1, num_return_sequences=1)
+        results = self.generator(prompt_full, max_length=self.generator_config.get("max_new_tokens", 10),
+                                 temperature=self.generator_config.get("temperature", 0),
+                                 num_return_sequences=self.generator_config.get("temperature", 1))
 
         generated_texts = [result["generated_text"] for result in results]
-        return generated_texts[0]
+        return generated_texts

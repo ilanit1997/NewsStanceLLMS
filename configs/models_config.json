@@ -16,5 +16,21 @@
         "tokenizer_name": "bert-base-cased",
         "base_model": "bert",
         "categories": ["Left", "Center", "Right"]
+    },
+    "LlamaModel": {
+        "model_id": "meta-llama/Llama-2-13b-chat-hf",
+        "prompt_file_path": "configs/prompt_llama2.txt",
+        "quantization": {
+            "load_in_4bit": true,
+            "bnb_4bit_quant_type": "nf4",
+            "bnb_4bit_use_double_quant": true,
+            "bnb_4bit_compute_dtype": "bfloat16"
+        },
+        "generation": {
+            "temperature": 0.1,
+            "max_new_tokens": 10,
+            "repetition_penalty": 1.1,
+            "num_return_sequences": 1
+        }
     }
 }

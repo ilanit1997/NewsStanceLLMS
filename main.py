@@ -13,9 +13,14 @@ results['Financial Sentiment'] = finance_sentiment_model.analyze(full_text)
 multi_news_sentiment_model = ClassifierModel(ModelType.MultiNewsSentimentModel)
 results['News Sentiment'] = multi_news_sentiment_model.analyze(full_text)
 results['Political Affiliation'] = political_model.analyze(full_text)
+
 ## doesnt work
 # article_score = ArticleScorer()
 # results['Group Analysis'] = article_score.score_article(full_text)
+
+##llama2
+llama2_model = LlamaChatModel(config_path="configs/models_config.json")
+results['Political Affiliation'] = llama2_model.generate_text(data)
 
 # Print consolidated results
 for key, value in results.items():
