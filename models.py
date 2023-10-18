@@ -91,9 +91,10 @@ class ModelType(Enum):
     LlamaModel = "LlamaModel"
 
 class ClassifierModel:
-    def __init__(self, model_type: ModelType):
+    def __init__(self, model_type: ModelType,
+                 config_path: str = 'configs/models_config.json'):
         # Load the config
-        with open('configs/models_config.json', 'r') as file:
+        with open(config_path, 'r') as file:
             config_file = json.load(file)
         if model_type.value not in config_file.keys():
             raise NotImplementedError()
@@ -282,8 +283,6 @@ class LlamaChatModel:
         model = config["model_id"]
         prompt_file_path = config["prompt_file_path"]
 
-        self.device = f'cuda:{cuda.current_device()}' if cuda.is_available() else 'cpu'
-
         self.tokenizer = AutoTokenizer.from_pretrained(model, use_fast=True)
         self.pipeline_type = config["pipeline_type"]
         self.pipeline = transformers.pipeline(
@@ -301,7 +300,6 @@ class LlamaChatModel:
         prompt_full = self.prompt.replace("{headline}", data["headline"])
         prompt_full = prompt_full.replace("{article_text}", data["content"])
 
-        len_prompt = int(len(prompt_full)*0.75)
         output = ""
         if "zero-shot" in self.pipeline_type:
             results =  self.pipeline(
@@ -318,16 +316,16 @@ class LlamaChatModel:
             output = sorted_labels[0]
 
         elif "generation" in self.pipeline_type:
-            len_prompt = len(self.tokenizer.tokenize(prompt_full))
+            num_tokens = len(self.tokenizer.tokenize(prompt_full))
             results = self.pipeline(
                 prompt_full,
                 do_sample=True,
                 top_k=10,
                 num_return_sequences=1,
                 eos_token_id=self.tokenizer.eos_token_id,
-                max_length=len_prompt+5,
+                max_length=num_tokens+5,
             )
-
-            output = [result["generated_text"][len(prompt_full):].strip() for result in results]
+            prompt_len = len(prompt_full)
+            output = [result["generated_text"][prompt_len:].strip() for result in results]
 
         return output
