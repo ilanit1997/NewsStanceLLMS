@@ -9,7 +9,7 @@ import torch
 import json
 import numpy as np
 from itertools import permutations
-from datasets import load_dataset, concatenate_datasets
+from stance_detection_datasets import load_dataset, concatenate_datasets
 from torch.utils.data import DataLoader, Subset, Dataset
 from sklearn.metrics import roc_auc_score, f1_score
 import re
