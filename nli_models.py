@@ -9,7 +9,7 @@ import torch
 import json
 import numpy as np
 from itertools import permutations
-from stance_detection_datasets import load_dataset, concatenate_datasets
+from datasets import load_dataset, concatenate_datasets
 from torch.utils.data import DataLoader, Subset, Dataset
 from sklearn.metrics import roc_auc_score, f1_score
 import re
@@ -126,56 +126,56 @@ def evaluate(model, dataset):
 
     return {'accuracy': acc, 'roc_auc': roc_auc, 'f1': f1}
 
-
-class ANLIdataset(Dataset):
-    def __init__(self):
-        anli_train_r1 = load_dataset('anli', split='train_r1')
-        anli_val_r1 = load_dataset('anli', split='dev_r1')
-        anli_test_r1 = load_dataset('anli', split='test_r1')
-        anli_train_r2 = load_dataset('anli', split='train_r2')
-        anli_val_r2 = load_dataset('anli', split='dev_r2')
-        anli_test_r2 = load_dataset('anli', split='test_r2')
-        anli_train_r3 = load_dataset('anli', split='train_r3')
-        anli_val_r3 = load_dataset('anli', split='dev_r3')
-        anli_test_r3 = load_dataset('anli', split='test_r3')
-        self.data = concatenate_datasets([anli_train_r1, anli_val_r1, anli_test_r1, anli_train_r2, anli_val_r2,
-                                          anli_test_r2, anli_train_r3, anli_val_r3, anli_test_r3])
-
-    def __len__(self):
-        return len(self.data)
-
-    def __getitem__(self, item):
-        return self.data[item]
-
-
-anli_dataset = ANLIdataset()
-anli_premises = []
-anli_hypotheses = []
-for i in tqdm(range(len(anli_dataset))):
-    anli_premises.append(anli_dataset[i]['premise'])
-    anli_hypotheses.append(anli_dataset[i]['hypothesis'])
-
-model = StanceDetectionNliModel(device='cuda')
-train_dataset = load_dataset("saattrupdan/doc-nli", split='train')
-val_dataset = load_dataset("saattrupdan/doc-nli", split='val')
-test_dataset = load_dataset("saattrupdan/doc-nli", split='test')
-dataset = concatenate_datasets([train_dataset, val_dataset, test_dataset])
-num = 10000
-indexes = list(range(len(dataset)))
-np.random.shuffle(indexes)
-chosen_indexes = []
-for i in tqdm(indexes):
-    info = dataset[i]
-    premise = info['premise']
-    hypothesis = info['hypothesis']
-    if premise in anli_premises and hypothesis in anli_hypotheses:
-        continue
-    chosen_indexes.append(i)
-    if len(chosen_indexes) == num:
-        break
+#
+# class ANLIdataset(Dataset):
+#     def __init__(self):
+#         anli_train_r1 = load_dataset('anli', split='train_r1')
+#         anli_val_r1 = load_dataset('anli', split='dev_r1')
+#         anli_test_r1 = load_dataset('anli', split='test_r1')
+#         anli_train_r2 = load_dataset('anli', split='train_r2')
+#         anli_val_r2 = load_dataset('anli', split='dev_r2')
+#         anli_test_r2 = load_dataset('anli', split='test_r2')
+#         anli_train_r3 = load_dataset('anli', split='train_r3')
+#         anli_val_r3 = load_dataset('anli', split='dev_r3')
+#         anli_test_r3 = load_dataset('anli', split='test_r3')
+#         self.data = concatenate_datasets([anli_train_r1, anli_val_r1, anli_test_r1, anli_train_r2, anli_val_r2,
+#                                           anli_test_r2, anli_train_r3, anli_val_r3, anli_test_r3])
+#
+#     def __len__(self):
+#         return len(self.data)
+#
+#     def __getitem__(self, item):
+#         return self.data[item]
+#
+#
+# anli_dataset = ANLIdataset()
+# anli_premises = []
+# anli_hypotheses = []
+# for i in tqdm(range(len(anli_dataset))):
+#     anli_premises.append(anli_dataset[i]['premise'])
+#     anli_hypotheses.append(anli_dataset[i]['hypothesis'])
+#
+# model = StanceDetectionNliModel(device='cuda')
+# train_dataset = load_dataset("saattrupdan/doc-nli", split='train')
+# val_dataset = load_dataset("saattrupdan/doc-nli", split='val')
+# test_dataset = load_dataset("saattrupdan/doc-nli", split='test')
+# dataset = concatenate_datasets([train_dataset, val_dataset, test_dataset])
+# num = 10000
 # indexes = list(range(len(dataset)))
 # np.random.shuffle(indexes)
-subset_dataset = Subset(dataset,chosen_indexes)
-# x = pd.read_json('/data/home/yehonatan-pe/temp/DocNLI_dataset/train.json')
-# print(x.iloc[0])
-print(evaluate(model,subset_dataset))
+# chosen_indexes = []
+# for i in tqdm(indexes):
+#     info = dataset[i]
+#     premise = info['premise']
+#     hypothesis = info['hypothesis']
+#     if premise in anli_premises and hypothesis in anli_hypotheses:
+#         continue
+#     chosen_indexes.append(i)
+#     if len(chosen_indexes) == num:
+#         break
+# # indexes = list(range(len(dataset)))
+# # np.random.shuffle(indexes)
+# subset_dataset = Subset(dataset,chosen_indexes)
+# # x = pd.read_json('/data/home/yehonatan-pe/temp/DocNLI_dataset/train.json')
+# # print(x.iloc[0])
+# print(evaluate(model,subset_dataset))

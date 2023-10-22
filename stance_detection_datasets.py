@@ -57,7 +57,7 @@ class PerspectrumDataset(Dataset):
         return len(self.data)
 
     def __getitem__(self, item):
-        data_item = self.data.loc[item]
+        data_item = self.data.loc[item].to_dict()
         return data_item['perspective'], data_item['claim'],data_item['fine_grained_stance']
 
 
