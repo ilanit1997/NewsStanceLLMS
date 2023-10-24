@@ -4,6 +4,7 @@ from datasets import load_dataset
 import json
 from tqdm import tqdm
 
+
 class PerspectrumDataset(Dataset):
     def __init__(self, split='train'):
         """
@@ -58,7 +59,7 @@ class PerspectrumDataset(Dataset):
 
     def __getitem__(self, item):
         data_item = self.data.loc[item].to_dict()
-        return data_item['perspective'], data_item['claim'],data_item['fine_grained_stance']
+        return data_item['perspective'], data_item['claim'], data_item['fine_grained_stance']
 
 
 class XStanceDataset(Dataset):
@@ -70,12 +71,17 @@ class XStanceDataset(Dataset):
     topic: topic of the question and comment
     label: label of the stance of the comment towards the question, can be (AGAINST, FAVOR)
     """
-    def __init__(self,split):
-        self.data = load_dataset('x_stance',split=split)
+
+    def __init__(self, split):
+        self.data = load_dataset('x_stance', split=split)
+
     def __len__(self):
         return len(self.data)
+
     def __getitem__(self, item):
-        return self.data[item]['language'],self.data[item]['question'],self.data[item]['comment'],self.data[item]['label']
+        return self.data[item]['language'], self.data[item]['question'], self.data[item]['comment'], self.data[item][
+            'label']
+
 
 class SemEval2016Dataset(Dataset):
     """
@@ -92,18 +98,51 @@ class SemEval2016Dataset(Dataset):
     (POSITIVE, NEGATIVE, NEITHER)
     The labels are also written in the read me for further explanation
     """
-    def __init__(self,split):
+
+    def __init__(self, split):
         if split == 'train':
-            self.data = pd.read_csv('data/SemEval_2016/trainingdata-all-annotations.txt',delimiter='\t',encoding='latin-1')
+            self.data = pd.read_csv('data/SemEval_2016/trainingdata-all-annotations.txt', delimiter='\t',
+                                    encoding='latin-1')
         elif split == 'validation':
-            self.data = pd.read_csv('data/SemEval_2016/testdata-taskA-all-annotations.txt',delimiter='\t',encoding='latin-1')
+            self.data = pd.read_csv('data/SemEval_2016/testdata-taskA-all-annotations.txt', delimiter='\t',
+                                    encoding='latin-1')
         elif split == 'test':
-            self.data = pd.read_csv('data/SemEval_2016/testdata-taskB-all-annotations.txt',delimiter='\t',encoding='latin-1')
+            self.data = pd.read_csv('data/SemEval_2016/testdata-taskB-all-annotations.txt', delimiter='\t',
+                                    encoding='latin-1')
         else:
             raise ValueError('split must be train, dev or test')
+
     def __len__(self):
         return len(self.data)
+
     def __getitem__(self, item):
         row = self.data.loc[0]
-        return row['Tweet'],row['Target'],row['Stance']
+        return row['Tweet'], row['Target'], row['Stance']
 
+
+class FNC1Dataset(Dataset):
+    def __init__(self, split):
+        self.data = load_dataset('nid989/FNC-1', split=split)
+        self.ids_to_labels = {0:'Agrees',1:'Disagrees', 2:'Discusses', 3:'Unrelated'}
+        """
+        Agrees: The body text agrees with the headline.
+        Disagrees: The body text disagrees with the headline.
+        Discusses: The body text discuss the same topic as the headline, but does not take a position
+        Unrelated: The body text discusses a different topic than the headline
+        """
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, item):
+        row = self.data[item]
+        return row['articleBody'], row['Headline'], row['Stance']
+
+
+# data = FNC1Dataset('train')
+# labels = {}
+# for i in range(len(data)):
+#     article,headline,label = data[i]
+#     if label not in labels:
+#         labels[label] = 0
+#     labels[label] += 1
+# print(labels)

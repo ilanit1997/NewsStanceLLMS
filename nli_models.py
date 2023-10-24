@@ -14,6 +14,7 @@ from torch.utils.data import DataLoader, Subset, Dataset
 from sklearn.metrics import roc_auc_score, f1_score
 import re
 
+
 def iter_list(list_, batch_size):
     num_of_batches = math.ceil(len(list_) / batch_size)
     for i in range(num_of_batches):
@@ -46,10 +47,11 @@ class StanceDetectionNliModel():
 
         return sentences
 
-    def predict(self, hypothesis, sentences):
+    def predict(self, hypotheses, premises):
         with torch.no_grad():
-            premises_hypothesis_pairs = [(f"premise:{sentence}", f"hypothesis:{hypothesis}") for sentence in sentences]
-            all_sentences_probs = []
+            premises_hypothesis_pairs = [(f"premise:{premise}", f"hypothesis:{hypothesis}") for premise, hypothesis in
+                                         zip(premises, hypotheses)]
+            all_premises_probs = []
             for batch in iter_list(premises_hypothesis_pairs, self.batch_size):
                 tokenized_input_seq_pair = self.tokenizer.batch_encode_plus(batch, return_tensors='pt',
                                                                             truncation='only_first',
@@ -65,17 +67,17 @@ class StanceDetectionNliModel():
                                      token_type_ids=token_type_ids,
                                      labels=None)
                 predicted_probability = torch.softmax(outputs[0].detach().cpu(), dim=1).tolist()
-                all_sentences_probs += predicted_probability
-            return np.array(all_sentences_probs)
+                all_premises_probs += predicted_probability
+            return np.array(all_premises_probs)
 
     def retrieve_and_predict(self, doc, hypothesis):
         sentences = self.split_doc(doc)
-        probs = self.predict(hypothesis, sentences)
+        probs = self.predict([hypothesis]*len(sentences), sentences)
         return {'max_prob_per_class': np.max(probs, axis=0), 'chosen_class': np.argmax(np.max(probs, axis=0))}
 
     def retrieve_and_rerank(self, doc, hypothesis):
         sentences = self.split_doc(doc)
-        probs = self.predict(hypothesis, sentences)
+        probs = self.predict([hypothesis]*len(sentences), sentences)
         best_entitlement_sentences = [sentences[j] for j in np.argsort(probs[:, 0])[::-1][:self.K]]
         best_neutral_sentences = [sentences[j] for j in np.argsort(probs[:, 1])[::-1][:self.K]]
         best_contradiction_sentences = [sentences[j] for j in np.argsort(probs[:, 2])[::-1][:self.K]]
