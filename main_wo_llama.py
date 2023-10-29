@@ -48,5 +48,5 @@ for batch_text, batch_metadata in data_loader:
 df = pd.DataFrame(all_results)
 
 # Save DataFrame to CSV
-csv_path = "output/results.csv"
+csv_path = "output/results_baselines.csv"
 df.to_csv(csv_path, index=False)

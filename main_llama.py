@@ -21,7 +21,7 @@ def custom_collate_fn(batch):
     text_data, metadata = zip(*batch)
     return text_data, metadata  # Returns a tuple of texts and a tuple of metadata dicts
 
-data_loader = DataLoader(final_dataset, batch_size=5, shuffle=False, collate_fn=custom_collate_fn)
+data_loader = DataLoader(final_dataset, batch_size=10, shuffle=False, collate_fn=custom_collate_fn)
 all_results = []
 
 for batch_text, batch_metadata in tqdm(data_loader, desc="Processing batches"):

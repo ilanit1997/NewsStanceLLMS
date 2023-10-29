@@ -34,12 +34,12 @@ class NewsDataset(Dataset):
         description = data.get("description")
         content = data.get("content")
         timestamp = data.get("timestamp")
-        authors = [""]
-        if type(data.get("author")) == list:
-            authors = [x.get("name") for x in data.get("author")]
-        elif type(data.get("author")) == dict:
-            authors = [data.get("author").get("name")]
-        authors = ",".join(authors)
+        # authors = [""]
+        # if type(data.get("author")) == list:
+        #     authors = [x.get("name") for x in data.get("author")]
+        # elif type(data.get("author")) == dict:
+        #     authors = [data.get("author").get("name")]
+        # authors = ",".join(authors)
 
         # Get results
         results = {
@@ -48,7 +48,7 @@ class NewsDataset(Dataset):
             "description": description,
             "content": content,
             "timestamp": timestamp,
-            "author": authors,
+            # "author": authors,
             "url": url,
         }
 

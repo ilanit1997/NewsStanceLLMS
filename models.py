@@ -213,7 +213,8 @@ class LlamaChatModel:
             data["truncated_content"] = content[:max_tokens]
 
         prompts = [
-            self.prompt.replace("{headline}", data["headline"]).replace("{article_text}", data["truncated_content"])
+            self.prompt.replace("{headline}", data.get("headline", "")).replace("{article_text}",
+                                                                                data.get("truncated_content", ""))
             for data in data_batch
         ]
         outputs = self.pipeline(
