@@ -19,20 +19,32 @@ from preprocessing import *
 from torch import cuda, bfloat16
 
 class DataReader:
+    def __init__(self, file_path):
+        self.data_file = self.load_data_file(file_path)
+        self.news_name = file_path.split("/")[-1].split(".")[0]
+
+
     @staticmethod
-    def load_data(file_path):
+    def load_data_file(file_path):
         with open(file_path, 'r') as file:
             return json.load(file)
 
     @staticmethod
-    def process_data(data: dict) -> str:
-        full_text = f"{data['description']} {data['headline']} {data['content']}"
+    def process_data_item(data: dict) -> str:
+        full_text = f" {data.get('headline')} {data.get('description')} {data.get('content')}"
         return full_text
+
+    def get_next_data(self):
+        for item in self.data_file:
+            yield item
+
+    def __len__(self):
+        return len(self.data_file)
+
 
 class SentimentAnalyzer:
     def __init__(self):
         self.sia = SentimentIntensityAnalyzer()
-
     def analyze(self, text):
         polarities = self.sia.polarity_scores(text)
         return polarities
@@ -46,7 +58,8 @@ class SentimentAnalyzer:
             return "Negative"
         else:
             return "Neutral"
-
+    def __str__(self):
+        return ModelType.FinancialSentimentModel.value
 
 class TextAnalyzer:
     def __init__(self):
@@ -99,6 +112,7 @@ class ClassifierModel:
         if model_type.value not in config_file.keys():
             raise NotImplementedError()
         config = config_file[model_type.value]
+        self.model_type = model_type.value
         self.model_name = config["model_name"]
         self.tokenizer = AutoTokenizer.from_pretrained(config["tokenizer_name"])
 
@@ -154,6 +168,8 @@ class ClassifierModel:
         avg_logits = torch.mean(torch.stack(logits_list), dim=0)
         return self.categories[torch.argmax(avg_logits)]
 
+    def __str__(self):
+        return self.model_type
 
 class ArticleScorer:
     def __init__(self):
@@ -274,6 +290,7 @@ class ArticleScorer:
         return scores
 
 
+
 class LlamaChatModel:
     def __init__(self, config_path: str = "configs/models_config.json"):
         with open(config_path, 'r') as file:
@@ -285,16 +302,42 @@ class LlamaChatModel:
 
         self.tokenizer = AutoTokenizer.from_pretrained(model, use_fast=True)
         self.pipeline_type = config["pipeline_type"]
+        # device = self.get_best_gpu()
+        # print(f"loading model on : {device}")
+
         self.pipeline = transformers.pipeline(
             self.pipeline_type,
             model=model,
             torch_dtype=torch.float16,
             device_map="auto",
+            # device=device
         )
 
         # Load prompts
         with open(prompt_file_path, "r") as file:
             self.prompt = "\n".join(file.readlines())
+
+    @staticmethod
+    def get_best_gpu() -> int:
+        """
+        Get the GPU id with the most free memory.
+        """
+        if not torch.cuda.is_available():
+            return -1  # CPU mode
+
+        # List available GPUs and get their memory allocations
+        gpu_memory_map = {}
+        for gpu_id in range(torch.cuda.device_count()):
+            device = torch.device(f"cuda:{gpu_id}")
+            torch.cuda.set_device(device)
+            allocated = torch.cuda.memory_allocated(device)
+            total = torch.cuda.get_device_properties(device).total_memory
+            free = total - allocated
+            gpu_memory_map[gpu_id] = free
+
+        # Get the GPU with the most free memory
+        best_gpu = max(gpu_memory_map, key=gpu_memory_map.get)
+        return best_gpu
 
     def generate_text(self, data: dict) -> List:
         prompt_full = self.prompt.replace("{headline}", data["headline"])
@@ -329,3 +372,6 @@ class LlamaChatModel:
             output = [result["generated_text"][prompt_len:].strip() for result in results]
 
         return output
+
+    def __str__(self):
+        return ModelType.LlamaModel.value
