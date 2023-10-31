@@ -54,20 +54,19 @@ class NewsDataset(Dataset):
         return prompt, metadata
 
     def get_metadata(self, data: dict) -> dict:
-        # Extract the required data fields
         headline = data.get("headline")
         url = data.get("url")
         description = data.get("description")
         content = data.get("content")
-        timestamp = data.get("timestamp")
-
-        # Get results
+        date_published = data.get("date_published")
+        date_modified = data.get("date_modified")
         results = {
             "news name": self.news_name,
             "headline": headline,
             "description": description,
             "content": content,
-            "timestamp": timestamp,
+            "date_published": date_published,
+            "date_modified": date_modified,
             "url": url,
         }
 

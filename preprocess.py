@@ -65,7 +65,7 @@ def check_if_all_duplicates_are_the_same(seperated_annotations):
 
 def process_nltk_sentiment_scores(df):
     scores = df['NLTK Sentiment Scores'].tolist()
-    seperated_annotations = [x.split('", "') for x in scores]
+    seperated_annotations = [x.split('", "') for x in scores if type(x) == str]
     for x in seperated_annotations:
         for i in range(len(x)):
             x[i] = x[i].replace('"', '')
@@ -133,8 +133,7 @@ def process_political_affiliation_scores(df):
     df['political_aff_ant'] = seperated_annotations
     return df
 
-
-def preprocess(df):
+def preprocess_df(df):
     df = llama_preprocess_only_full_agreement(df)
     df = process_nltk_sentiment_scores(df)
     df = process_nltk_sentiment_scores_from_compound(df)

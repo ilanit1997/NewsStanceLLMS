@@ -1,4 +1,4 @@
-from preprocess import preprocess
+from preprocess import preprocess_df
 import pandas as pd
 from nltk.metrics.agreement import AnnotationTask
 import seaborn as sns
@@ -25,8 +25,8 @@ def measure_agreement(df, col1, col2):
 
 
 def main():
-    df = pd.read_csv('data/results_baselines_llama2-7b.csv')
-    df = preprocess(df)
+    df = pd.read_csv('output/results_baselines_llama2-7b.csv')
+    df = preprocess_df(df)
     cols = ['llama2_ant', 'nltk_sent_ant', 'nltk_sent_ant_comp',
             'financial_sent_ant', 'news_sent_ant', 'political_aff_ant']
 
