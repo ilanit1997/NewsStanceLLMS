@@ -13,8 +13,9 @@ print(f'cuda:{cuda.current_device()}' if cuda.is_available() else 'cpu')
 data_folder = "data/20231028"
 
 llama2_model = LlamaChatModel()
+prompt = llama2_model.prompt
 data_file_paths = [os.path.join(data_folder, news) for news in os.listdir(data_folder)]
-all_datasets = [NewsDataset(file_path) for file_path in data_file_paths]
+all_datasets = [NewsDataset(file_path, prompt=prompt) for file_path in data_file_paths]
 final_dataset = ConcatDataset(all_datasets)
 
 def custom_collate_fn(batch):
@@ -25,7 +26,10 @@ data_loader = DataLoader(final_dataset, batch_size=10, shuffle=False, collate_fn
 all_results = []
 
 for batch_text, batch_metadata in tqdm(data_loader, desc="Processing batches"):
-    for i, model_result in enumerate(llama2_model.generate_text_batch(batch_text)):
+    raw_outputs = llama2_model.generate_text_batch(batch_text)
+    decoded_outputs = llama2_model.post_process(raw_outputs)
+
+    for i, model_result in enumerate(decoded_outputs):
         result = batch_metadata[i]
         result.update({"Llama2 Affiliation": model_result})
         all_results.append(result)
@@ -34,8 +38,8 @@ for batch_text, batch_metadata in tqdm(data_loader, desc="Processing batches"):
     torch.cuda.empty_cache()
     gc.collect()
 
-    df = pd.DataFrame(all_results)
+df = pd.DataFrame(all_results)
 
-    # Save DataFrame to CSV
-    csv_path = f"/data/home/ilanit.sobol/politics/output/results_llama2-7b.csv"
-    df.to_csv(csv_path, index=False)
+# Save DataFrame to CSV
+csv_path = f"/data/home/ilanit.sobol/politics/output/results_llama2-13b.csv"
+df.to_csv(csv_path, index=False)

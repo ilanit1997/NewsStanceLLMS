@@ -207,23 +207,22 @@ class LlamaChatModel:
         output = [result["generated_text"][prompt_len:].strip() for result in results]
         return output
 
-    def generate_text_batch(self, data_batch, max_tokens=6000):
-        for data in data_batch:
-            content = data["content"]
-            data["truncated_content"] = content[:max_tokens]
+    def generate_text_batch(self, data_batch):
 
-        prompts = [
-            self.prompt.replace("{headline}", data.get("headline", "")).replace("{article_text}",
-                                                                                data.get("truncated_content", ""))
-            for data in data_batch
-        ]
         outputs = self.pipeline(
-            prompts,
+            list(data_batch),
             do_sample=True,
             top_k=10,
             num_return_sequences=1,
             eos_token_id=self.tokenizer.eos_token_id
         )
+        return outputs
+
+
+    def __str__(self):
+        return ModelType.LlamaModel.value
+
+    def post_process(self, outputs):
         decoded_outputs = []
         for output_batch in outputs:
             output = output_batch[0].get("generated_text")
@@ -237,7 +236,3 @@ class LlamaChatModel:
                 decoded_outputs.append(output)
 
         return decoded_outputs
-
-
-    def __str__(self):
-        return ModelType.LlamaModel.value
