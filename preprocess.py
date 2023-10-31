@@ -50,7 +50,7 @@ def llama_preprocess_only_full_agreement(df: pd.DataFrame):
             extracted_llama_2[i] = None
         else:
             extracted_llama_2[i] = extracted_llama_2[i][0]
-    df['llama2_processed'] = extracted_llama_2
+    df['llama2_ant'] = extracted_llama_2
     return df
 
 def check_if_all_duplicates_are_the_same(seperated_annotations):
@@ -79,7 +79,7 @@ def process_nltk_sentiment_scores(df):
         labels_ids = ['negative', 'neutral', 'positive']
         label = labels_ids[np.argmax([x['neg'], x['neu'], x['pos']])]
         annotations.append(label)
-    df['nltk_sentiment_annotations'] = annotations
+    df['nltk_sent_ant'] = annotations
     return df
 
 def process_nltk_sentiment_scores_from_compound(df):
@@ -91,7 +91,7 @@ def process_nltk_sentiment_scores_from_compound(df):
     if not check_if_all_duplicates_are_the_same(seperated_annotations):
         raise ValueError("Not all annotators are the same")
     seperated_annotations = [x[0].lower() for x in seperated_annotations]
-    df['nltk_sentiment_annotations_from_compound'] = seperated_annotations
+    df['nltk_sent_ant_comp'] = seperated_annotations
     return df
 
 
@@ -104,7 +104,7 @@ def process_financial_sentiment_scores(df):
     if not check_if_all_duplicates_are_the_same(seperated_annotations):
         raise ValueError("Not all annotators are the same")
     seperated_annotations = [x[0].lower() for x in seperated_annotations]
-    df['financial_sentiment_annotations'] = seperated_annotations
+    df['financial_sent_ant'] = seperated_annotations
     return df
 
 
@@ -117,7 +117,7 @@ def process_news_sentiment_scores(df):
     if not check_if_all_duplicates_are_the_same(seperated_annotations):
         raise ValueError("Not all annotators are the same")
     seperated_annotations = [x[0].lower() for x in seperated_annotations]
-    df['news_sentiment_annotations'] = seperated_annotations
+    df['news_sent_ant'] = seperated_annotations
     return df
 
 
@@ -130,7 +130,7 @@ def process_political_affiliation_scores(df):
     if not check_if_all_duplicates_are_the_same(seperated_annotations):
         raise ValueError("Not all annotators are the same")
     seperated_annotations = [x[0].lower() for x in seperated_annotations]
-    df['political_affiliation_annotations'] = seperated_annotations
+    df['political_aff_ant'] = seperated_annotations
     return df
 
 

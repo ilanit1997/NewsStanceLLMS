@@ -1,9 +1,8 @@
 from preprocess import preprocess
 import pandas as pd
 from nltk.metrics.agreement import AnnotationTask
-
-
-
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 
 def measure_agreement(df, col1, col2):
@@ -28,8 +27,9 @@ def measure_agreement(df, col1, col2):
 def main():
     df = pd.read_csv('data/results_baselines_llama2-7b.csv')
     df = preprocess(df)
-    cols = ['llama2_processed', 'nltk_sentiment_annotations', 'nltk_sentiment_annotations_from_compound',
-            'financial_sentiment_annotations', 'news_sentiment_annotations', 'political_affiliation_annotations']
+    cols = ['llama2_ant', 'nltk_sent_ant', 'nltk_sent_ant_comp',
+            'financial_sent_ant', 'news_sent_ant', 'political_aff_ant']
+
     records = []
     for col in cols:
         for col2 in cols:
@@ -46,9 +46,24 @@ def main():
                 print(col2)
                 records.append((col, col2, None, None, None, None))
             print("-------------------------------------------------------------")
-    df = pd.DataFrame.from_records(records,columns=['annotations_model_1', 'annotations_model_2', 'Kappa', 'Krippendorff  alpha', 'Scott pi',
-                       'Bennett s'])
+    df = pd.DataFrame.from_records(records, columns=['annotations_model_1', 'annotations_model_2', 'Kappa',
+                                                     'Krippendorff  alpha', 'Scott pi',
+                                                     'Bennett s'])
     df.to_csv('data/agreements.csv', index=False)
+    for metric in ['Kappa', 'Krippendorff  alpha', 'Scott pi', 'Bennett s']:
+        if metric == 'Kappa':
+            show_heatmap(df, metric, 0)
+        else:
+            show_heatmap(df, metric,-1)
+
+
+def show_heatmap(df, col, vmin):
+    plt.figure(constrained_layout=True)
+    df = df.copy()[['annotations_model_1', 'annotations_model_2', col]]
+    df_pivot = df.pivot(index='annotations_model_1', columns='annotations_model_2', values=col)
+    sns.heatmap(df_pivot, annot=True, vmin=vmin, vmax=1, cmap='coolwarm')
+    plt.title(f"Annotation {col}")
+    plt.show()
 
 
 if __name__ == '__main__':
