@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="PublishConfigData" autoUpload="Always" serverName="yehonatan-pe@nlp18.iem.technion.ac.il:22 password">
+    <serverData>
+      <paths name="yehonatan-pe@nlp-srv1.iem.technion.ac.il:22 password">
+        <serverdata>
+          <mappings>
+            <mapping local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="yehonatan-pe@nlp-srv1.iem.technion.ac.il:22 password (1)">
+        <serverdata>
+          <mappings>
+            <mapping local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="yehonatan-pe@nlp11.iem.technion.ac.il:22 password">
+        <serverdata>
+          <mappings>
+            <mapping local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="yehonatan-pe@nlp18.iem.technion.ac.il:22 password">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/home/yehonatan-pe/IsraelPolitics" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
+    </serverData>
+    <option name="myAutoUpload" value="ALWAYS" />
+  </component>
+</project>
