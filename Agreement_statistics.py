@@ -29,7 +29,6 @@ def main():
     df = preprocess(df)
     cols = ['llama2_ant', 'nltk_sent_ant', 'nltk_sent_ant_comp',
             'financial_sent_ant', 'news_sent_ant', 'political_aff_ant']
-
     records = []
     for col in cols:
         for col2 in cols:
@@ -52,19 +51,20 @@ def main():
     df.to_csv('data/agreements.csv', index=False)
     for metric in ['Kappa', 'Krippendorff  alpha', 'Scott pi', 'Bennett s']:
         if metric == 'Kappa':
-            show_heatmap(df, metric, 0)
+            show_heatmap(df, 'annotations_model_1', 'annotations_model_2', metric, 0)
         else:
-            show_heatmap(df, metric,-1)
+            show_heatmap(df, 'annotations_model_1', 'annotations_model_2', metric, -1)
 
 
-def show_heatmap(df, col, vmin):
+def show_heatmap(df, model_1_col, model_2_col, col, vmin):
     plt.figure(constrained_layout=True)
-    df = df.copy()[['annotations_model_1', 'annotations_model_2', col]]
-    df_pivot = df.pivot(index='annotations_model_1', columns='annotations_model_2', values=col)
+    df = df.copy()[[model_1_col, model_2_col, col]]
+    df_pivot = df.pivot(index=model_1_col, columns=model_2_col, values=col)
     sns.heatmap(df_pivot, annot=True, vmin=vmin, vmax=1, cmap='coolwarm')
     plt.title(f"Annotation {col}")
     plt.show()
 
 
 if __name__ == '__main__':
-    main()
+    pass
+    # main()

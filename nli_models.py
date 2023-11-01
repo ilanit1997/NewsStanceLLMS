@@ -1,3 +1,5 @@
+import time
+
 import pandas as pd
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import nltk
@@ -13,6 +15,20 @@ from datasets import load_dataset, concatenate_datasets
 from torch.utils.data import DataLoader, Subset, Dataset
 from sklearn.metrics import roc_auc_score, f1_score
 import re
+import string
+import gc
+
+def normalize_text(text):
+    # Convert text to lowercase
+    text = text.lower()
+
+    # Remove punctuation and special characters
+    text = re.sub(r'[^a-zA-Z0-9\s]', '', text)
+
+    # Remove extra whitespaces
+    text = ' '.join(text.split())
+
+    return text
 
 
 def iter_list(list_, batch_size):
@@ -28,12 +44,12 @@ class StanceDetectionNliModel():
     with adaptation to the case of neutral class included, as most nli models use neutral class
     """
 
-    def __init__(self, model_name='ynie/roberta-large-snli_mnli_fever_anli_R1_R2_R3-nli', batch_size=64, K=1,
+    def __init__(self, model_name='ynie/roberta-large-snli_mnli_fever_anli_R1_R2_R3-nli', batch_size=32, K=1,
                  device='cpu'):
-        self.positive_stances = ['The article is pro Israel', 'The article is pro Hamas',
-                                 'The article is pro Palestine']
-        self.negative_stances = ['The article is anti Israel', 'The article is anti Hamas',
-                                 'The article is anti Palestine']
+        # self.positive_stances = ['The article is pro Israel', 'The article is pro Hamas',
+        #                          'The article is pro Palestine']
+        # self.negative_stances = ['The article is anti Israel', 'The article is anti Hamas',
+        #                          'The article is anti Palestine']
         tokenizer = AutoTokenizer.from_pretrained(model_name)
         model = AutoModelForSequenceClassification.from_pretrained(model_name)
         self.model = model.to(device)
@@ -43,55 +59,96 @@ class StanceDetectionNliModel():
         self.device = device
 
     def split_doc(self, doc):
+        # doc = remove_non_necessary_punctuation(doc)
         sentences = sent_tokenize(doc)
-
+        sentences = [normalize_text(x) for x in sentences]
         return sentences
 
     def predict(self, hypotheses, premises):
+        self.model.eval()
         with torch.no_grad():
             premises_hypothesis_pairs = [(f"premise:{premise}", f"hypothesis:{hypothesis}") for premise, hypothesis in
                                          zip(premises, hypotheses)]
+
             all_premises_probs = []
             for batch in iter_list(premises_hypothesis_pairs, self.batch_size):
                 tokenized_input_seq_pair = self.tokenizer.batch_encode_plus(batch, return_tensors='pt',
                                                                             truncation='only_first',
                                                                             return_token_type_ids=True, max_length=512,
-                                                                            padding=True).to(self.device)
+                                                                            padding=True)
+
+
+
+                tokenized_input_seq_pair = tokenized_input_seq_pair
                 input_ids = tokenized_input_seq_pair['input_ids'].long()
                 # remember bart doesn't have 'token_type_ids', remove the line below if you are using bart.
                 token_type_ids = tokenized_input_seq_pair['token_type_ids'].long()
                 attention_mask = tokenized_input_seq_pair['attention_mask'].long()
-
-                outputs = self.model(input_ids,
-                                     attention_mask=attention_mask,
-                                     token_type_ids=token_type_ids,
+                outputs = self.model(input_ids.to(self.device),
+                                     attention_mask=attention_mask.to(self.device),
+                                     token_type_ids=token_type_ids.to(self.device),
                                      labels=None)
-                predicted_probability = torch.softmax(outputs[0].detach().cpu(), dim=1).tolist()
+
+                predicted_probability = torch.softmax(outputs[0], dim=1)
                 all_premises_probs += predicted_probability
-            return np.array(all_premises_probs)
+        #gc.collect()
+        return torch.stack(all_premises_probs).cpu().numpy()
 
-    def retrieve_and_predict(self, doc, hypothesis):
-        sentences = self.split_doc(doc)
-        probs = self.predict([hypothesis]*len(sentences), sentences)
-        return {'max_prob_per_class': np.max(probs, axis=0), 'chosen_class': np.argmax(np.max(probs, axis=0))}
+    def retrieve_and_predict(self, docs, hypothesis):
+        all_sentences = []
+        limits = [0]
+        for doc in docs:
+            sentences = self.split_doc(doc)
+            all_sentences += sentences
+            limits.append(len(sentences) + limits[-1] if len(limits) > 0 else len(sentences))
+        if len(all_sentences) == 0:
+            return None
+        probs = self.predict([hypothesis] * len(all_sentences), all_sentences)
+        predictions = []
+        for i in range(len(limits) - 1):
+            doc_probs = probs[limits[i]:limits[i + 1]]
+            doc_prediction = doc_probs.mean(axis=0)
+            predictions.append(doc_prediction)
+        return np.stack(predictions)
+        # return {'max_prob_per_class': np.max(probs, axis=0), 'chosen_class': np.argmax(np.max(probs, axis=0))}
 
-    def retrieve_and_rerank(self, doc, hypothesis):
-        sentences = self.split_doc(doc)
-        probs = self.predict([hypothesis]*len(sentences), sentences)
-        best_entitlement_sentences = [sentences[j] for j in np.argsort(probs[:, 0])[::-1][:self.K]]
-        best_neutral_sentences = [sentences[j] for j in np.argsort(probs[:, 1])[::-1][:self.K]]
-        best_contradiction_sentences = [sentences[j] for j in np.argsort(probs[:, 2])[::-1][:self.K]]
-        chosen_sentences = [best_entitlement_sentences, best_neutral_sentences, best_contradiction_sentences]
+    def retrieve_and_rerank(self, docs, hypothesis):
+        all_docs_sentences = []
+        limits = [0]
+        for doc in docs:
+            sentences = self.split_doc(doc)
+            all_docs_sentences += sentences
+            limits.append(len(sentences) + limits[-1] if len(limits) > 0 else len(sentences))
+        if len(all_docs_sentences) == 0:
+            return None
+        probs = self.predict([hypothesis] * len(all_docs_sentences), all_docs_sentences)
+        # probs = self.predict([hypothesis]*len(sentences), sentences)
+        # docs_chunks = []
         all_orders = list(permutations([0, 1, 2], 3))
+        limits2 = [0]
         new_premises = []
-        for order in all_orders:
-            new_premise = ""
-            for i in order:
-                new_premise += " ".join(chosen_sentences[i])
-            new_premises.append(new_premise)
-        probs = self.predict(hypothesis, new_premises)
-        prediction = probs.mean(axis=0)
-        return {'prediction_probs': prediction, "chosen_class": np.argmax(prediction)}
+        for i in range(len(limits) - 1):
+            docs_probs = probs[limits[i]:limits[i + 1]]
+            sentences = all_docs_sentences[limits[i]:limits[i + 1]]
+            best_entitlement_sentences = [sentences[j] for j in np.argsort(docs_probs[:, 0])[::-1][:self.K]]
+            best_neutral_sentences = [sentences[j] for j in np.argsort(docs_probs[:, 1])[::-1][:self.K]]
+            best_contradiction_sentences = [sentences[j] for j in np.argsort(docs_probs[:, 2])[::-1][:self.K]]
+            chosen_sentences = [best_entitlement_sentences, best_neutral_sentences, best_contradiction_sentences]
+            doc_new_premises = []
+            for order in all_orders:
+                new_premise = ""
+                for i in order:
+                    new_premise += " ".join(chosen_sentences[i])
+                doc_new_premises.append(new_premise)
+            new_premises += doc_new_premises
+            limits2.append(len(doc_new_premises) + limits2[-1] if len(limits2) > 0 else len(doc_new_premises))
+        probs = self.predict([hypothesis] * len(new_premises), new_premises)
+        docs_predictions = []
+        for i in range(len(limits2) - 1):
+            docs_probs = probs[limits2[i]:limits2[i + 1]]
+            doc_prediction = docs_probs.mean(axis=0)
+            docs_predictions.append(doc_prediction)
+        return np.stack(docs_predictions)
 
 
 def evaluate(model, dataset):
