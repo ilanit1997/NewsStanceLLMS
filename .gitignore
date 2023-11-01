@@ -1,0 +1,7 @@
+/data/
+# User-specific stuff
+.idea/**
+.idea/**/**
+.idea/inspectionProfiles/**
+
+

@@ -1,32 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" autoUpload="Always" serverName="yehonatan-pe@nlp18.iem.technion.ac.il:22 password">
+  <component name="PublishConfigData" autoUpload="Always" serverName="ilanit.sobol@nlp15.iem.technion.ac.il:22 password (2)" remoteFilesAllowedToDisappearOnAutoupload="false">
     <serverData>
-      <paths name="yehonatan-pe@nlp-srv1.iem.technion.ac.il:22 password">
+      <paths name="ilanit.sobol@nlp15.iem.technion.ac.il:22 password">
         <serverdata>
           <mappings>
-            <mapping local="$PROJECT_DIR$" web="/" />
+            <mapping deploy="/politics" local="$PROJECT_DIR$" web="/" />
           </mappings>
         </serverdata>
       </paths>
-      <paths name="yehonatan-pe@nlp-srv1.iem.technion.ac.il:22 password (1)">
+      <paths name="ilanit.sobol@nlp15.iem.technion.ac.il:22 password (2)">
         <serverdata>
           <mappings>
-            <mapping local="$PROJECT_DIR$" web="/" />
+            <mapping deploy="/politics" local="$PROJECT_DIR$" web="/" />
           </mappings>
         </serverdata>
       </paths>
-      <paths name="yehonatan-pe@nlp11.iem.technion.ac.il:22 password">
+      <paths name="ilanit.sobol@nlp15.iem.technion.ac.il:22 password (3)">
         <serverdata>
           <mappings>
-            <mapping local="$PROJECT_DIR$" web="/" />
-          </mappings>
-        </serverdata>
-      </paths>
-      <paths name="yehonatan-pe@nlp18.iem.technion.ac.il:22 password">
-        <serverdata>
-          <mappings>
-            <mapping deploy="/home/yehonatan-pe/IsraelPolitics" local="$PROJECT_DIR$" />
+            <mapping deploy="/politics" local="$PROJECT_DIR$" web="/" />
           </mappings>
         </serverdata>
       </paths>

@@ -1,6 +1,6 @@
 <s>[INST] <<SYS>>
 You are a helpful, respectful and honest news classifier.
-You have the task of classifying news articles to one of 3 classes - "pro-israel", "pro-hamas" or "natural".
+You have the task of classifying news articles of the israeli-palestinien conflict to one of 3 classes - "pro-israel", "pro-hamas" or "neutral".
 The response should be only one of the 3 classes. Do not explain.
 
 <</SYS>>

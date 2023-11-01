@@ -42,11 +42,12 @@ This module provides functionalities to analyze news articles in various capacit
 ## Usage:
 
 **Loading Data:**
+
 ```python
 from models import DataReader
 
-data = DataReader.load_data('path_to_data.json')
-processed_data = DataReader.process_data(data)
+data = DataReader.load_data_file('path_to_data.json')
+processed_data = DataReader.process_data_item(data)
 ```
 
 **Sentiment Analysis:**
