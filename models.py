@@ -1,19 +1,16 @@
 import json
+import re
 from typing import List
-
+import nltk
 import transformers
+from nltk import WordNetLemmatizer, word_tokenize
+from nltk.corpus import stopwords
 from nltk.sentiment import SentimentIntensityAnalyzer
 from nltk.probability import FreqDist
-from transformers import AutoTokenizer, BertForSequenceClassification, RobertaForSequenceClassification, BertTokenizer, \
-    RobertaTokenizer, RobertaModel, AutoModelForCausalLM
-import torch
+from transformers import AutoTokenizer, BertForSequenceClassification, RobertaForSequenceClassification
 from enum import Enum
-from torch.nn.functional import cosine_similarity
-from preprocessing import *
+import torch
 
-# # Ensure you've downloaded the required resources
-# nltk.download('stopwords')
-# nltk.download('wordnet')
 
 from torch import cuda, bfloat16
 
@@ -23,7 +20,10 @@ class SentimentAnalyzer:
         self.sia = SentimentIntensityAnalyzer()
     def analyze(self, text):
         polarities = self.sia.polarity_scores(text)
-        return polarities
+        polarities_copy = {}
+        for key, value in polarities.items():
+            polarities_copy[f"nltk_{key}"] = value
+        return polarities_copy
 
     def analyze_compound(self, text, threhold=0.05):
         polarities = self.sia.polarity_scores(text)

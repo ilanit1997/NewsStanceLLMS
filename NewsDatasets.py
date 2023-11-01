@@ -42,16 +42,21 @@ class NewsDataset(Dataset):
     def __getitem__(self, idx):
         data = self.data_file[idx]
         metadata = self.get_metadata(data)
-        try:
-            content = data.get("content", "")
-            truncated_content = content[:self.max_chars]
-            headline = data.get("headline", "")
-            prompt = self.prompt.replace("{headline}", headline)
-            prompt = prompt.replace("{article_text}", truncated_content)
-        except Exception as e:
-            print(f"Error processing data at index {idx}: {str(e)}")  # log or print error for debugging
-            prompt = ""
-        return prompt, metadata
+        if self.prompt:
+            try:
+                content = data.get("content", "No content")
+                truncated_content = content[:self.max_chars]
+                headline = data.get("headline", "No headline")
+                prompt = self.prompt.replace("{headline}", headline)
+                prompt = prompt.replace("{article_text}", truncated_content)
+            except Exception as e:
+                print(f"Error processing data at index {idx}: {str(e)}")  # log or print error for debugging
+                prompt = ""
+            return prompt, metadata
+
+        else:
+            full_text = f"{data.get('headline', 'No headline')} \n {data.get('description', 'No description')} \n {data.get('content', 'No content')}"
+            return full_text, metadata
 
     def get_metadata(self, data: dict) -> dict:
         headline = data.get("headline")

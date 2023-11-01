@@ -6,11 +6,12 @@ import gc
 
 from models import *
 from torch.utils.data import DataLoader, ConcatDataset
-from CustomDatasets import NewsDataset
+from NewsDatasets import NewsDataset
 
 print(f'cuda:{cuda.current_device()}' if cuda.is_available() else 'cpu')
 
-data_folder = "data/20231028"
+latest_date = "20231031"
+data_folder = f"data/{latest_date}"
 
 llama2_model = LlamaChatModel()
 prompt = llama2_model.prompt
@@ -39,7 +40,7 @@ for batch_text, batch_metadata in tqdm(data_loader, desc="Processing batches"):
     gc.collect()
 
 df = pd.DataFrame(all_results)
-
-# Save DataFrame to CSV
-csv_path = f"/data/home/ilanit.sobol/politics/output/results_llama2-13b.csv"
+output_folder = f"output/{latest_date}"
+os.makedirs(output_folder, exist_ok=True)
+csv_path = f"{output_folder}/results_llama2-13b.csv"
 df.to_csv(csv_path, index=False)

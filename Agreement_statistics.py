@@ -1,8 +1,11 @@
+import os
+
 from preprocess import preprocess_df
 import pandas as pd
 from nltk.metrics.agreement import AnnotationTask
 import seaborn as sns
 import matplotlib.pyplot as plt
+from constants import DataCols, ParsedDataCols, ProClasses
 
 
 def measure_agreement(df, col1, col2):
@@ -25,11 +28,11 @@ def measure_agreement(df, col1, col2):
 
 
 def main():
-    df = pd.read_csv('output/results_baselines_llama2-7b.csv')
+    latest_date = "20231031"
+    df = pd.read_csv(f'output/{latest_date}/results_baselines_llama2-13b.csv')
     df = preprocess_df(df)
-    cols = ['llama2_ant', 'nltk_sent_ant', 'nltk_sent_ant_comp',
-            'financial_sent_ant', 'news_sent_ant', 'political_aff_ant']
-
+    cols = [ParsedDataCols.LLAMA2_AFFILIATION.value, ParsedDataCols.NLTK_BEST.value, DataCols.NLTK_SENTIMENT_FROM_COMPOUND.value,
+            DataCols.FINANCIAL_SENTIMENT.value, DataCols.NEWS_SENTIMENT.value, DataCols.POLITICAL_AFFILIATION.value]
     records = []
     for col in cols:
         for col2 in cols:
@@ -49,20 +52,24 @@ def main():
     df = pd.DataFrame.from_records(records, columns=['annotations_model_1', 'annotations_model_2', 'Kappa',
                                                      'Krippendorff  alpha', 'Scott pi',
                                                      'Bennett s'])
-    df.to_csv('data/agreements.csv', index=False)
+    df.to_csv(f'output/{latest_date}/agreements.csv', index=False)
     for metric in ['Kappa', 'Krippendorff  alpha', 'Scott pi', 'Bennett s']:
         if metric == 'Kappa':
-            show_heatmap(df, metric, 0)
+            show_heatmap(df, metric, 0, latest_date)
         else:
-            show_heatmap(df, metric,-1)
+            show_heatmap(df, metric,-1, latest_date)
 
 
-def show_heatmap(df, col, vmin):
+def show_heatmap(df, col, vmin, latest_date):
+    plots_folder = f"output/{latest_date}/plots"
+    os.makedirs(plots_folder, exist_ok=True)
     plt.figure(constrained_layout=True)
     df = df.copy()[['annotations_model_1', 'annotations_model_2', col]]
     df_pivot = df.pivot(index='annotations_model_1', columns='annotations_model_2', values=col)
     sns.heatmap(df_pivot, annot=True, vmin=vmin, vmax=1, cmap='coolwarm')
     plt.title(f"Annotation {col}")
+    fig_file = f'{plots_folder}/Agreement Annotation {col}.png'
+    plt.savefig(fig_file)
     plt.show()
 
 
